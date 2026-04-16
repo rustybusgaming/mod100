@@ -23,6 +23,9 @@ public final class WeatherPackets {
     public static final Identifier WEATHER_UPDATE_ID =
             Identifier.of(LocalWeatherMod.MOD_ID, "weather_update");
 
+    public static final Identifier WIND_UPDATE_ID =
+            Identifier.of(LocalWeatherMod.MOD_ID, "wind_update");
+
     private WeatherPackets() {}
 
     // -------------------------------------------------------------------------
@@ -62,6 +65,30 @@ public final class WeatherPackets {
         }
     }
 
+    /**
+     * Wind direction payload sent from server to client.
+     */
+    public record WindUpdatePayload(
+            float windDirX,
+            float windDirZ
+    ) implements CustomPayload {
+
+        public static final CustomPayload.Id<WindUpdatePayload> ID =
+                new CustomPayload.Id<>(WIND_UPDATE_ID);
+
+        public static final PacketCodec<RegistryByteBuf, WindUpdatePayload> CODEC =
+                PacketCodec.tuple(
+                        PacketCodecs.FLOAT, WindUpdatePayload::windDirX,
+                        PacketCodecs.FLOAT, WindUpdatePayload::windDirZ,
+                        WindUpdatePayload::new
+                );
+
+        @Override
+        public CustomPayload.Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Registration
     // -------------------------------------------------------------------------
@@ -71,7 +98,11 @@ public final class WeatherPackets {
                 WeatherUpdatePayload.ID,
                 WeatherUpdatePayload.CODEC
         );
-        LocalWeatherMod.LOGGER.info("[LocalWeather] Registered S2C weather packet.");
+        PayloadTypeRegistry.playS2C().register(
+                WindUpdatePayload.ID,
+                WindUpdatePayload.CODEC
+        );
+        LocalWeatherMod.LOGGER.info("[LocalWeather] Registered S2C weather packets.");
     }
 
     // -------------------------------------------------------------------------
@@ -85,6 +116,11 @@ public final class WeatherPackets {
                 zone.getZoneX(),
                 zone.getZoneZ()
         );
+        ServerPlayNetworking.send(player, payload);
+    }
+
+    public static void sendWindUpdate(ServerPlayerEntity player, double windDirX, double windDirZ) {
+        WindUpdatePayload payload = new WindUpdatePayload((float) windDirX, (float) windDirZ);
         ServerPlayNetworking.send(player, payload);
     }
 }

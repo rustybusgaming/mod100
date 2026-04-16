@@ -63,6 +63,8 @@ public class WeatherZoneManager {
     // -------------------------------------------------------------------------
 
     private static void onServerTick(MinecraftServer server) {
+        WindState.tick();
+
         for (ServerWorld world : server.getWorlds()) {
             tickWorld(world);
         }
@@ -121,6 +123,16 @@ public class WeatherZoneManager {
         return zones.computeIfAbsent(packed, k -> createZone(world, zoneX, zoneZ));
     }
 
+    /**
+     * Get an existing zone without creating it. Returns null if the zone hasn't been loaded.
+     */
+    public static WeatherZone getZone(ServerWorld world, int zoneX, int zoneZ) {
+        RegistryKey<World> key = world.getRegistryKey();
+        Map<Long, WeatherZone> zones = WORLD_ZONES.get(key);
+        if (zones == null) return null;
+        return zones.get(pack(zoneX, zoneZ));
+    }
+
     private static WeatherZone createZone(ServerWorld world, int zoneX, int zoneZ) {
         WeatherZone.WeatherType initial = pickInitialWeather(world, zoneX, zoneZ);
         int duration = randomDuration(initial);
@@ -146,6 +158,24 @@ public class WeatherZoneManager {
             ServerWorld world, WeatherZone zone, int zoneX, int zoneZ) {
 
         WeatherZone.WeatherType current = zone.getCurrentWeather();
+
+        // Check the upwind neighbor — weather fronts drift with the wind
+        int[] upwind = WindState.getUpwindZone(zoneX, zoneZ);
+        RegistryKey<World> key = world.getRegistryKey();
+        Map<Long, WeatherZone> zones = WORLD_ZONES.get(key);
+        WeatherZone upwindZone = (zones != null) ? zones.get(pack(upwind[0], upwind[1])) : null;
+
+        // 45% chance to inherit upwind neighbor's weather (creates drifting fronts)
+        if (upwindZone != null && RANDOM.nextFloat() < 0.45f) {
+            WeatherZone.WeatherType upwindWeather = upwindZone.getCurrentWeather();
+            if (upwindWeather != WeatherZone.WeatherType.CLEAR) {
+                return applyBiomeRules(world, zoneX, zoneZ, upwindWeather);
+            }
+            // Upwind is clear — higher chance of clearing
+            if (current != WeatherZone.WeatherType.CLEAR) {
+                return WeatherZone.WeatherType.CLEAR;
+            }
+        }
 
         if (current == WeatherZone.WeatherType.CLEAR) {
             // Was clear — chance of rain/thunder
@@ -241,11 +271,17 @@ public class WeatherZoneManager {
      * and render approaching cloud/sky/fog effects.
      */
     private static void syncPlayersZones(MinecraftServer server) {
+        double windX = WindState.getWindDirX();
+        double windZ = WindState.getWindDirZ();
+
         for (ServerWorld world : server.getWorlds()) {
             for (ServerPlayerEntity player : world.getPlayers()) {
                 ChunkPos chunkPos = player.getChunkPos();
                 int centerZoneX = chunkPos.x >> 4;
                 int centerZoneZ = chunkPos.z >> 4;
+
+                // Send wind direction
+                WeatherPackets.sendWindUpdate(player, windX, windZ);
 
                 // Send current zone + 5x5 grid (2 zones in each direction)
                 for (int dx = -2; dx <= 2; dx++) {

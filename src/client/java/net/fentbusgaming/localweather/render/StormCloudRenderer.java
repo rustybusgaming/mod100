@@ -78,10 +78,12 @@ public class StormCloudRenderer {
         Camera camera = client.gameRenderer.getCamera();
         Vec3d cam = camera.getCameraPos();
 
-        // Cloud drift offset based on game time
+        // Cloud drift offset based on game time and wind direction
         float tickDelta = client.getRenderTickCounter().getTickProgress(false);
         long worldTime = client.world != null ? client.world.getTime() : 0;
-        float drift = (worldTime + tickDelta) * DRIFT_SPEED;
+        float driftMag = (worldTime + tickDelta) * DRIFT_SPEED;
+        float driftX = (float) (driftMag * ClientWeatherHandler.getWindDirX());
+        float driftZ = (float) (driftMag * ClientWeatherHandler.getWindDirZ());
 
         boolean anyVisible = false;
         for (ClientWeatherHandler.ZoneState s : zones.values()) {
@@ -156,9 +158,9 @@ public class StormCloudRenderer {
                     // Check if this cell should be filled
                     if (cellNoise(worldCellX, worldCellZ, 0) > coverage) continue;
 
-                    // Cell world position (with drift on X axis, like vanilla)
-                    float cellWX = zoneWorldX + cx * CELL_SIZE + drift;
-                    float cellWZ = zoneWorldZ + cz * CELL_SIZE;
+                    // Cell world position (with wind-direction drift)
+                    float cellWX = zoneWorldX + cx * CELL_SIZE + driftX;
+                    float cellWZ = zoneWorldZ + cz * CELL_SIZE + driftZ;
 
                     // Distance fade per cell
                     double cdx = cellWX + CELL_SIZE * 0.5f - cam.x;

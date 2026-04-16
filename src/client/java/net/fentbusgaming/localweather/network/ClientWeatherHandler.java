@@ -55,6 +55,10 @@ public final class ClientWeatherHandler {
     private static double smoothStormDirZ = 0;
     private static float smoothStormIntensity = 0f;
 
+    /** Wind direction from server. */
+    private static double windDirX = 1.0;
+    private static double windDirZ = 0.0;
+
     private ClientWeatherHandler() {}
 
     // -------------------------------------------------------------------------
@@ -95,6 +99,14 @@ public final class ClientWeatherHandler {
 
                     long key = pack(zx, zz);
                     ZONE_STATES.put(key, new ZoneState(weather, progress, zx, zz));
+                }
+        );
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                WeatherPackets.WindUpdatePayload.ID,
+                (payload, context) -> {
+                    windDirX = payload.windDirX();
+                    windDirZ = payload.windDirZ();
                 }
         );
 
@@ -327,5 +339,13 @@ public final class ClientWeatherHandler {
 
     public static float getSmoothedStormIntensity() {
         return smoothStormIntensity;
+    }
+
+    public static double getWindDirX() {
+        return windDirX;
+    }
+
+    public static double getWindDirZ() {
+        return windDirZ;
     }
 }
