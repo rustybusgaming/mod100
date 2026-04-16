@@ -1,8 +1,6 @@
 package net.fentbusgaming.localweather;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fentbusgaming.localweather.command.WeatherCommand;
 import net.fentbusgaming.localweather.network.WeatherPackets;
 import net.fentbusgaming.localweather.weather.WeatherZoneManager;
 import org.slf4j.Logger;
@@ -18,7 +16,5 @@ public class LocalWeatherMod implements ModInitializer {
         LOGGER.info("[LocalWeather] Initializing Localized Weather mod");
         WeatherPackets.registerServerPackets();
         WeatherZoneManager.init();
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-                WeatherCommand.register(dispatcher));
     }
 }

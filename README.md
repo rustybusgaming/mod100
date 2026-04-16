@@ -29,14 +29,17 @@ A Fabric mod that replaces Minecraft's global weather system with **per-zone loc
 2. Drop the mod jar into your `mods` folder
 3. Launch the game
 
-## Commands
+## How It Works
 
-| Command | Description |
-|---|---|
-| `/localweather set <type>` | Set weather in your current zone (clear/rain/thunder/snow) |
-| `/localweather query` | Check the weather in your current zone |
+Weather happens automatically — no commands needed. Each 256×256 block zone rolls its own weather independently:
 
-Requires operator permissions (level 2).
+- **Clear skies** last 10 minutes to 2.5 hours before a chance of weather
+- **Rain and storms** last 10–20 minutes before clearing
+- **Biome rules** kick in automatically — deserts stay dry, cold biomes get snow instead of rain
+- **Transitions** blend smoothly over 20 seconds at zone boundaries
+- **Storm clouds** appear as blocky 3D cloud layers over rainy/stormy zones, visible from far away
+
+Just install and play — the weather will do its thing.
 
 ## Credits
 
