@@ -3,8 +3,8 @@
   "id": "localweather",
   "version": "${version}",
   "name": "Localized Weather",
-  "description": "Per-chunk localized weather zones with biome-aware rules and smooth transitions.",
-  "authors": ["LocalWeatherMod"],
+  "description": "Per-zone localized weather with biome-aware rules, smooth transitions, and Minecraft-style storm clouds.",
+  "authors": ["fentbusgaming"],
   "contact": {},
   "license": "MIT",
   "icon": "assets/localweather/icon.png",
@@ -21,12 +21,14 @@
     }
   ],
   "depends": {
-    "fabricloader": ">=0.16.5",
+    "fabricloader": ">=0.19.2",
     "fabric-api": "*",
     "minecraft": ">=1.21.9",
     "java": ">=21"
   },
-  "suggests": {
-    "better-clouds": "*"
+  "recommends": {
+    "better-clouds": "*",
+    "yet-another-config-lib": "*",
+    "modmenu": "*"
   }
 }

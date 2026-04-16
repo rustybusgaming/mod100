@@ -62,10 +62,10 @@ public final class ClientWeatherHandler {
     // State per zone
     // -------------------------------------------------------------------------
 
-    static final class ZoneState {
-        WeatherZone.WeatherType weather;
-        float transitionProgress;
-        int zoneX, zoneZ;
+    public static final class ZoneState {
+        public final WeatherZone.WeatherType weather;
+        public final float transitionProgress;
+        public final int zoneX, zoneZ;
 
         ZoneState(WeatherZone.WeatherType weather, float transitionProgress, int zoneX, int zoneZ) {
             this.weather = weather;
@@ -301,6 +301,10 @@ public final class ClientWeatherHandler {
     // -------------------------------------------------------------------------
     // Public accessors
     // -------------------------------------------------------------------------
+
+    public static Map<Long, ZoneState> getZoneStates() {
+        return ZONE_STATES;
+    }
 
     public static WeatherZone.WeatherType getCurrentZoneWeather() {
         return currentZoneWeather;

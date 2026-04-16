@@ -2,20 +2,31 @@ package net.fentbusgaming.localweather.mixin;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fentbusgaming.localweather.network.ClientWeatherHandler;
-import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.render.CloudRenderer;
-import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
+/**
+ * Darkens vanilla cloud color during storms. Automatically skipped when
+ * Better Clouds is installed, since it replaces the vanilla cloud renderer
+ * and reads our rain/thunder gradients directly from the world.
+ */
 @Environment(EnvType.CLIENT)
 @Mixin(CloudRenderer.class)
 public abstract class CloudColorMixin {
 
+    @Unique
+    private static final boolean BETTER_CLOUDS_LOADED =
+            FabricLoader.getInstance().isModLoaded("betterclouds");
+
     @ModifyVariable(method = "renderClouds", at = @At("HEAD"), ordinal = 0, argsOnly = true)
     private int localweather$darkenStormClouds(int cloudColor) {
+        if (BETTER_CLOUDS_LOADED) return cloudColor;
+
         float rain = ClientWeatherHandler.getRainDarkening();
         float thunder = ClientWeatherHandler.getThunderDarkening();
         float proximity = ClientWeatherHandler.getStormProximityDarkening();
