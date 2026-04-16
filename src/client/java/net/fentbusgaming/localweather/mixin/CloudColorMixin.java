@@ -3,36 +3,41 @@ package net.fentbusgaming.localweather.mixin;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fentbusgaming.localweather.network.ClientWeatherHandler;
-import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.option.CloudRenderMode;
+import net.minecraft.client.render.CloudRenderer;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 @Environment(EnvType.CLIENT)
-@Mixin(ClientWorld.class)
+@Mixin(CloudRenderer.class)
 public abstract class CloudColorMixin {
 
-    @Inject(method = "getCloudsColor", at = @At("RETURN"), cancellable = true)
-    private void localweather$darkenStormClouds(float tickDelta, CallbackInfoReturnable<Vec3d> cir) {
+    @ModifyVariable(method = "renderClouds", at = @At("HEAD"), ordinal = 0, argsOnly = true)
+    private int localweather$darkenStormClouds(int cloudColor) {
         float rain = ClientWeatherHandler.getRainDarkening();
         float thunder = ClientWeatherHandler.getThunderDarkening();
         float proximity = ClientWeatherHandler.getStormProximityDarkening();
         float factor = Math.max(rain, proximity);
-        if (factor < 0.01f) return;
+        if (factor < 0.01f) return cloudColor;
 
-        Vec3d original = cir.getReturnValue();
+        float r = ((cloudColor >> 16) & 0xFF) / 255.0f;
+        float g = ((cloudColor >> 8) & 0xFF) / 255.0f;
+        float b = (cloudColor & 0xFF) / 255.0f;
 
         // Rain clouds: dark grey. Thunder clouds: very dark.
-        double stormR = 0.35 - thunder * 0.15;
-        double stormG = 0.37 - thunder * 0.17;
-        double stormB = 0.40 - thunder * 0.15;
+        float stormR = 0.35f - thunder * 0.15f;
+        float stormG = 0.37f - thunder * 0.17f;
+        float stormB = 0.40f - thunder * 0.15f;
 
-        double r = original.x + (stormR - original.x) * factor;
-        double g = original.y + (stormG - original.y) * factor;
-        double b = original.z + (stormB - original.z) * factor;
+        r = r + (stormR - r) * factor;
+        g = g + (stormG - g) * factor;
+        b = b + (stormB - b) * factor;
 
-        cir.setReturnValue(new Vec3d(r, g, b));
+        return (cloudColor & 0xFF000000)
+                | (Math.clamp((int) (r * 255), 0, 255) << 16)
+                | (Math.clamp((int) (g * 255), 0, 255) << 8)
+                | Math.clamp((int) (b * 255), 0, 255);
     }
 }

@@ -1,11 +1,13 @@
 package net.fentbusgaming.localweather.mixin;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fentbusgaming.localweather.network.ClientWeatherHandler;
-import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.render.fog.AtmosphericFogModifier;
+import net.minecraft.client.render.fog.FogData;
+import net.minecraft.client.world.ClientWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -17,37 +19,34 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * the feeling of an approaching weather front.
  */
 @Environment(EnvType.CLIENT)
-@Mixin(BackgroundRenderer.class)
+@Mixin(AtmosphericFogModifier.class)
 public abstract class FogMixin {
 
     /**
-     * After vanilla applies fog, tighten the fog end distance when near storms
+     * After vanilla applies atmospheric fog, tighten the fog end distance when near storms
      * to create a hazy, overcast look in the direction of an approaching storm.
      */
-    @Inject(method = "applyFog", at = @At("RETURN"))
-    private static void localweather$stormFog(Camera camera,
-                                               BackgroundRenderer.FogType fogType,
-                                               float viewDistance,
-                                               boolean thickFog,
-                                               float tickDelta,
-                                               CallbackInfo ci) {
+    @Inject(method = "applyStartEndModifier", at = @At("RETURN"))
+    private void localweather$stormFog(FogData fogData,
+                                       Camera camera,
+                                       ClientWorld world,
+                                       float viewDistance,
+                                       RenderTickCounter tickCounter,
+                                       CallbackInfo ci) {
         float rain = ClientWeatherHandler.getRainDarkening();
         float thunder = ClientWeatherHandler.getThunderDarkening();
         float proximity = ClientWeatherHandler.getStormProximityDarkening();
         float factor = Math.max(rain, proximity);
         if (factor < 0.02f) return;
 
-        float fogEnd = RenderSystem.getShaderFogEnd();
-        float fogStart = RenderSystem.getShaderFogStart();
-
         // Rain: pull fog in by up to 40%. Thunder: up to 55%.
         float fogReduction = factor * (0.40f + thunder * 0.15f);
-        float stormFogEnd = fogEnd * (1.0f - fogReduction);
-        float stormFogStart = fogStart * (1.0f - factor * 0.25f);
+        float stormEnd = fogData.environmentalEnd * (1.0f - fogReduction);
+        float stormStart = fogData.environmentalStart * (1.0f - factor * 0.25f);
 
-        if (stormFogEnd < fogEnd) {
-            RenderSystem.setShaderFogEnd(stormFogEnd);
-            RenderSystem.setShaderFogStart(Math.min(stormFogStart, stormFogEnd - 10f));
+        if (stormEnd < fogData.environmentalEnd) {
+            fogData.environmentalEnd = stormEnd;
+            fogData.environmentalStart = Math.min(stormStart, stormEnd - 10f);
         }
     }
 }

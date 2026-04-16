@@ -6,6 +6,8 @@ import com.mojang.brigadier.context.CommandContext;
 import net.fentbusgaming.localweather.network.WeatherPackets;
 import net.fentbusgaming.localweather.weather.WeatherZone;
 import net.fentbusgaming.localweather.weather.WeatherZoneManager;
+import net.minecraft.command.permission.Permission;
+import net.minecraft.command.permission.PermissionLevel;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -33,7 +35,7 @@ public final class WeatherCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(
             literal("localweather")
-                .requires(source -> source.hasPermissionLevel(2)) // creative / op
+                .requires(source -> source.getPermissions().hasPermission(new Permission.Level(PermissionLevel.GAMEMASTERS))) // creative / op
                 .then(literal("set")
                     .then(argument("type", word())
                         .suggests((ctx, builder) -> {
@@ -72,7 +74,7 @@ public final class WeatherCommand {
             return 0;
         }
 
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = (ServerWorld) player.getEntityWorld();
         WeatherZone zone = WeatherZoneManager.getOrCreateZoneForPlayer(world, player);
 
         zone.setTargetWeather(type);
@@ -109,7 +111,7 @@ public final class WeatherCommand {
             return 0;
         }
 
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = (ServerWorld) player.getEntityWorld();
         WeatherZone zone = WeatherZoneManager.getOrCreateZoneForPlayer(world, player);
 
         String info = "Zone [" + zone.getZoneX() + ", " + zone.getZoneZ() + "]: "

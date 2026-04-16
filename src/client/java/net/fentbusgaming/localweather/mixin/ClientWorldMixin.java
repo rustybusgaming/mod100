@@ -30,6 +30,7 @@ public abstract class ClientWorldMixin {
     )
     private void localweather$overridePrecipitation(
             BlockPos pos,
+            int height,
             CallbackInfoReturnable<Biome.Precipitation> cir) {
 
         WeatherZone.WeatherType zone = ClientWeatherHandler.getCurrentZoneWeather();

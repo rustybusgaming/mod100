@@ -3,37 +3,46 @@ package net.fentbusgaming.localweather.mixin;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fentbusgaming.localweather.network.ClientWeatherHandler;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.SkyRendering;
+import net.minecraft.client.render.state.SkyRenderState;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
-@Mixin(ClientWorld.class)
+@Mixin(SkyRendering.class)
 public abstract class SkyColorMixin {
 
-    @Inject(method = "getSkyColor", at = @At("RETURN"), cancellable = true)
-    private void localweather$darkenStormSky(Vec3d cameraPos, float tickDelta,
-                                              CallbackInfoReturnable<Vec3d> cir) {
+    @Inject(method = "updateRenderState", at = @At("RETURN"))
+    private void localweather$darkenStormSky(ClientWorld world, float tickDelta,
+                                              Camera camera, SkyRenderState state,
+                                              CallbackInfo ci) {
         float rain = ClientWeatherHandler.getRainDarkening();
         float thunder = ClientWeatherHandler.getThunderDarkening();
         float proximity = ClientWeatherHandler.getStormProximityDarkening();
         float factor = Math.max(rain, proximity);
         if (factor < 0.01f) return;
 
-        Vec3d original = cir.getReturnValue();
+        int color = state.skyColor;
+        float r = ((color >> 16) & 0xFF) / 255.0f;
+        float g = ((color >> 8) & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
 
         // Overcast sky: grey. Thunder sky: very dark grey.
-        double stormR = 0.55 - thunder * 0.25;
-        double stormG = 0.57 - thunder * 0.27;
-        double stormB = 0.60 - thunder * 0.25;
+        float stormR = 0.55f - thunder * 0.25f;
+        float stormG = 0.57f - thunder * 0.27f;
+        float stormB = 0.60f - thunder * 0.25f;
 
-        double r = original.x + (stormR - original.x) * factor;
-        double g = original.y + (stormG - original.y) * factor;
-        double b = original.z + (stormB - original.z) * factor;
+        r = r + (stormR - r) * factor;
+        g = g + (stormG - g) * factor;
+        b = b + (stormB - b) * factor;
 
-        cir.setReturnValue(new Vec3d(r, g, b));
+        state.skyColor = (0xFF << 24)
+                | (Math.clamp((int) (r * 255), 0, 255) << 16)
+                | (Math.clamp((int) (g * 255), 0, 255) << 8)
+                | Math.clamp((int) (b * 255), 0, 255);
     }
 }
