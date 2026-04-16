@@ -2,6 +2,17 @@
 
 All notable changes to Localized Weather will be documented in this file.
 
+## [1.1.2] - 2026-04-16
+
+### Added
+- Directional thunder sounds — thunder plays from the direction of nearby storm zones with proximity-based volume
+- Weather zone drift — global wind direction slowly rotates, weather fronts propagate from upwind neighbors
+- Wind-direction cloud drift — storm clouds now move with the wind instead of fixed X-axis
+- Public Weather API (`LocalWeatherAPI`) for other mods to query weather at any position or zone
+
+### Changed
+- Storm cloud renderer uses server-synced wind direction for drift
+
 ## [1.0.0] - 2026-04-16
 
 ### Added
